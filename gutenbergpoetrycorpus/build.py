@@ -4,7 +4,6 @@ import codecs
 import sys
 
 from gutenbergdammit.ziputils import searchandretrieve
-import wordfilter
 
 def clean(s):
     "removes leading numbers and trailing numbers with whitespace"
@@ -48,23 +47,13 @@ checks = {
         (len([ch for ch in line if ch.isupper()]) / (len(line)+0.01)) < 0.5,
     # doesn't begin or end with a digit
     'not_number': lambda prev, line: \
-            not(re.search("^\d", line)) and not(re.search("\d$", line)),
-    # passes the wordfilter
-    'wordfilter_ok': lambda prev, line: not(wordfilter.blacklisted(line))
+            not(re.search("^\d", line)) and not(re.search("\d$", line))
 }
 
 def err(*args):
     print(*args, file=sys.stderr)
 
 if __name__ == '__main__':
-
-    # remove some terms from wordfilter because they were filtering large
-    # numbers of inoffensive lines; added one because its presence in this
-    # corpus is almost always questionable. (terms in rot13 as a kind of
-    # content warning)
-    wordfilter.remove_words([codecs.encode(item, "rot_13") 
-        for item in ['ynzr', 'pevc', 'tnfu', 'fcvp']])
-    wordfilter.add_words([codecs.encode("wrj", "rot_13")])
 
     from optparse import OptionParser
     parser = OptionParser()
@@ -92,7 +81,7 @@ if __name__ == '__main__':
             line = clean(line.strip())
             check_results = {k: v(prev, line) for k, v in checks.items()}
             if all(check_results.values()):
-                poem_lines.append((line, metadata['Num']))
+                poem_lines.append((line, metadata['Num'], line_count + 1))
             line_count += 1
             prev = line
 
@@ -101,5 +90,5 @@ if __name__ == '__main__':
 
     err("printing to stdout...")
     for line in poem_lines:
-        print(json.dumps({'s': line[0], 'gid': line[1]}))
+        print(json.dumps({'s': line[0], 'gid': line[1], 'line': line[2]}))
 
